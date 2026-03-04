@@ -23,13 +23,18 @@ function renderProducts() {
   productList.innerHTML = "";
   products.forEach(function(product) {
     var li = document.createElement("li");
+
+    // Use a text node so the button remains a proper child element
+    var textNode = document.createTextNode(product.name + " - $" + product.price + " ");
+    li.appendChild(textNode);
+
     var btn = document.createElement("button");
     btn.textContent = "Add to Cart";
     btn.setAttribute("data-id", String(product.id));
     btn.addEventListener("click", function() {
       addToCart(product.id);
     });
-    li.textContent = product.name + " - $" + product.price + " ";
+
     li.appendChild(btn);
     productList.appendChild(li);
   });
@@ -68,6 +73,5 @@ function clearCart() {
 
 clearCartBtn.addEventListener("click", clearCart);
 
-// On load: render products, then restore cart from sessionStorage without clearing it
 renderProducts();
 renderCart();
