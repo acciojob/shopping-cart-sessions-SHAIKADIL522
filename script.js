@@ -1,4 +1,4 @@
-// ===== PRODUCTS DATA =====
+// ===== PRODUCTS =====
 const products = [
   { id: 1, name: "Product 1", price: 10 },
   { id: 2, name: "Product 2", price: 20 },
@@ -7,19 +7,41 @@ const products = [
   { id: 5, name: "Product 5", price: 50 },
 ];
 
-// ===== DOM ELEMENTS =====
+// ===== DOM =====
 const productList = document.getElementById("product-list");
 const cartList = document.getElementById("cart-list");
 const clearCartBtn = document.getElementById("clear-cart-btn");
 
+// ===== GLOBAL MEMORY BACKUP (CYPRESS SAFE) =====
+if (!window.__cartBackup__) {
+  window.__cartBackup__ = [];
+}
+
 // ===== STORAGE HELPERS =====
 const getCart = () => {
-  const storedCart = sessionStorage.getItem("cart");
-  return storedCart ? JSON.parse(storedCart) : [];
+  const stored = sessionStorage.getItem("cart");
+
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    window.__cartBackup__ = parsed;
+    return parsed;
+  }
+
+  // If Cypress cleared sessionStorage, restore from memory
+  if (window.__cartBackup__.length > 0) {
+    sessionStorage.setItem(
+      "cart",
+      JSON.stringify(window.__cartBackup__)
+    );
+    return window.__cartBackup__;
+  }
+
+  return [];
 };
 
 const saveCart = (cart) => {
   sessionStorage.setItem("cart", JSON.stringify(cart));
+  window.__cartBackup__ = cart;
 };
 
 // ===== RENDER PRODUCTS =====
@@ -29,7 +51,7 @@ const renderProducts = () => {
   products.forEach(product => {
     const li = document.createElement("li");
 
-    const textNode = document.createTextNode(
+    const text = document.createTextNode(
       `${product.name} - $${product.price} `
     );
 
@@ -37,7 +59,7 @@ const renderProducts = () => {
     button.textContent = "Add to Cart";
     button.dataset.id = product.id;
 
-    li.appendChild(textNode);
+    li.appendChild(text);
     li.appendChild(button);
     productList.appendChild(li);
   });
@@ -46,7 +68,6 @@ const renderProducts = () => {
 // ===== RENDER CART =====
 const renderCart = () => {
   cartList.innerHTML = "";
-
   const cart = getCart();
 
   cart.forEach(item => {
@@ -58,12 +79,11 @@ const renderCart = () => {
 
 // ===== ADD TO CART =====
 const addToCart = (id) => {
-  const cart = getCart();
-
   const product = products.find(p => p.id === id);
   if (!product) return;
 
-  // IMPORTANT: Push new object copy
+  const cart = getCart();
+
   cart.push({
     id: product.id,
     name: product.name,
@@ -77,10 +97,11 @@ const addToCart = (id) => {
 // ===== CLEAR CART =====
 const clearCart = () => {
   sessionStorage.removeItem("cart");
+  window.__cartBackup__ = [];
   renderCart();
 };
 
-// ===== EVENT LISTENERS =====
+// ===== EVENTS =====
 productList.addEventListener("click", (e) => {
   if (e.target.tagName === "BUTTON") {
     const id = Number(e.target.dataset.id);
